@@ -1,14 +1,16 @@
 package org.flexlayouts.layouts {
+	import mx.controls.Alert;
 	import mx.core.ILayoutElement;
 	
 	import spark.components.supportClasses.GroupBase;
+	import spark.layouts.VerticalLayout;
 	import spark.layouts.supportClasses.LayoutBase;
 
 	/**
 	 * A custom flow layout based heavily on Evtim's FlowLayout:
 	 * http://evtimmy.com/2009/06/flowlayout-a-spark-custom-layout-example/
 	 */
-	public class FlowLayout extends LayoutBase {
+	public class FlowLayout extends VerticalLayout {
 		private var _padding:Number = 0;
 		private var _horizontalGap:Number = 6;
 		private var _verticalGap:Number = 6;
@@ -35,6 +37,36 @@ package org.flexlayouts.layouts {
 			if (layoutTarget) {
 				layoutTarget.invalidateDisplayList();
 			}
+		}
+		
+		override public function measure():void {
+			
+			var layoutTarget:GroupBase = target;
+			var numElements:Number = layoutTarget.numElements;
+			var previousYCoord:Number = 0;
+			var numRows:Number = 1;
+			var maxElementHeight:Number = 0;
+			
+			for (var i:int = 0; i < numElements; i++)
+			{
+				var element:ILayoutElement = ( useVirtualLayout ? layoutTarget.getVirtualElementAt(i) : layoutTarget.getElementAt(i) );
+				var currentYCoord:Number = element.getLayoutBoundsY();
+				
+				var currElementHeight:Number = element.getLayoutBoundsHeight();
+				if (maxElementHeight < currElementHeight) maxElementHeight = currElementHeight;
+				
+				// When the current Y coordinate is different from the previous coordinate 
+				// the element is in a new row
+				if (currentYCoord != previousYCoord)
+				{
+					numRows++;
+					previousYCoord = currentYCoord;
+				}
+			}
+			
+			var numVerticalGaps:Number = numRows - 1;
+			var totalVerticalGapWidth:Number = numVerticalGaps * _verticalGap;
+			layoutTarget.measuredHeight = numRows * maxElementHeight + totalVerticalGapWidth; 
 		}
 
 		override public function updateDisplayList(containerWidth:Number, containerHeight:Number):void {
@@ -89,6 +121,7 @@ package org.flexlayouts.layouts {
 
 			//set final content size (needed for scrolling)
 			layoutTarget.setContentSize(maxWidth + _padding, maxHeight + _padding);
+			layoutTarget.invalidateSize();
 		}
 	}
 }
